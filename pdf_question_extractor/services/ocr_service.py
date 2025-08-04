@@ -55,8 +55,8 @@ class MistralOCRService:
                 lambda: self.client.ocr.process(
                     model=self.model,
                     document={
-                        "type": "document_base64",
-                        "document_base64": pdf_base64
+                        "type": "document_url",
+                        "document_url": f"data:application/pdf;base64,{pdf_base64}"
                     },
                     include_image_base64=include_images
                 )

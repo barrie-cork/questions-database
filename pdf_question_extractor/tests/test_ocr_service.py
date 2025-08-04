@@ -42,7 +42,7 @@ class TestMistralOCRService:
     async def test_process_pdf_file_success(self, ocr_service, mock_ocr_response, sample_pdf_path):
         """Test successful PDF processing from file"""
         # Mock the client.ocr.process method
-        with patch.object(ocr_service.client.ocr, 'process', return_value=mock_ocr_response):
+        with patch.object(ocr_service.client.ocr, 'process', return_value=mock_ocr_response) as mock_process:
             # Mock run_in_executor to run synchronously
             with patch('asyncio.get_event_loop') as mock_loop:
                 mock_loop.return_value.run_in_executor = AsyncMock(
@@ -53,13 +53,13 @@ class TestMistralOCRService:
         
         # Verify
         assert result == "Sample OCR text from PDF\n\nThis is extracted content."
-        ocr_service.client.ocr.process.assert_called_once()
+        mock_process.assert_called_once()
         
         # Verify the call arguments
-        call_args = ocr_service.client.ocr.process.call_args
+        call_args = mock_process.call_args
         assert call_args[1]['model'] == 'mistral-ocr-latest'
-        assert call_args[1]['document']['type'] == 'document_base64'
-        assert 'document_base64' in call_args[1]['document']
+        assert call_args[1]['document']['type'] == 'document_url'
+        assert call_args[1]['document']['document_url'].startswith('data:application/pdf;base64,')
         assert call_args[1]['include_image_base64'] is True
     
     @pytest.mark.asyncio
@@ -68,7 +68,7 @@ class TestMistralOCRService:
         pdf_url = "https://example.com/sample.pdf"
         
         # Mock the client.ocr.process method
-        with patch.object(ocr_service.client.ocr, 'process', return_value=mock_ocr_response):
+        with patch.object(ocr_service.client.ocr, 'process', return_value=mock_ocr_response) as mock_process:
             # Mock run_in_executor
             with patch('asyncio.get_event_loop') as mock_loop:
                 mock_loop.return_value.run_in_executor = AsyncMock(
@@ -79,10 +79,10 @@ class TestMistralOCRService:
         
         # Verify
         assert result == "Sample OCR text from PDF\n\nThis is extracted content."
-        ocr_service.client.ocr.process.assert_called_once()
+        mock_process.assert_called_once()
         
         # Verify URL was passed correctly
-        call_args = ocr_service.client.ocr.process.call_args
+        call_args = mock_process.call_args
         assert call_args[1]['document']['type'] == 'document_url'
         assert call_args[1]['document']['document_url'] == pdf_url
     
@@ -105,36 +105,33 @@ class TestMistralOCRService:
     @pytest.mark.asyncio
     async def test_retry_on_http_error(self, ocr_service, mock_ocr_response):
         """Test retry mechanism on HTTP errors"""
-        # Setup mock to fail twice then succeed
-        side_effects = [
-            httpx.HTTPError("Server error"),
-            httpx.HTTPError("Server error"),
-            mock_ocr_response
-        ]
+        # Track call count
+        call_count = 0
         
-        with patch.object(ocr_service.client.ocr, 'process', side_effect=side_effects):
+        def side_effect_func(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count < 3:
+                raise httpx.HTTPError("Server error")
+            return mock_ocr_response
+        
+        with patch.object(ocr_service.client.ocr, 'process', side_effect=side_effect_func) as mock_process:
             with patch('asyncio.get_event_loop') as mock_loop:
-                # Make run_in_executor execute the function and propagate exceptions
-                def executor_side_effect(executor, func):
-                    result = func()
-                    if isinstance(result, Exception):
-                        raise result
-                    return result
-                
+                # Make run_in_executor execute the function
                 mock_loop.return_value.run_in_executor = AsyncMock(
-                    side_effect=executor_side_effect
+                    side_effect=lambda executor, func: func()
                 )
                 
                 result = await ocr_service.process_pdf_from_url("https://example.com/test.pdf")
         
         assert result == "Sample OCR text from PDF\n\nThis is extracted content."
-        assert ocr_service.client.ocr.process.call_count == 3
+        assert call_count == 3
     
     @pytest.mark.asyncio
     async def test_failed_after_max_retries(self, ocr_service):
         """Test failure after max retry attempts"""
         # Setup mock to always fail
-        with patch.object(ocr_service.client.ocr, 'process', side_effect=httpx.HTTPError("Persistent error")):
+        with patch.object(ocr_service.client.ocr, 'process', side_effect=httpx.HTTPError("Persistent error")) as mock_process:
             with patch('asyncio.get_event_loop') as mock_loop:
                 mock_loop.return_value.run_in_executor = AsyncMock(
                     side_effect=lambda executor, func: func()
@@ -144,7 +141,7 @@ class TestMistralOCRService:
                     await ocr_service.process_pdf_from_url("https://example.com/test.pdf")
         
         # Should have tried 3 times
-        assert ocr_service.client.ocr.process.call_count == 3
+        assert mock_process.call_count == 3
     
     @pytest.mark.asyncio
     async def test_response_parsing_variations(self, ocr_service):
@@ -219,9 +216,9 @@ class TestMistralOCRService:
                 result = await ocr_service.process_pdf(str(pdf_file))
         
         # Verify base64 encoding was used correctly
-        assert call_args_capture['document']['type'] == 'document_base64'
+        assert call_args_capture['document']['type'] == 'document_url'
         expected_base64 = base64.b64encode(pdf_content).decode('utf-8')
-        assert call_args_capture['document']['document_base64'] == expected_base64
+        assert call_args_capture['document']['document_url'] == f"data:application/pdf;base64,{expected_base64}"
     
     @pytest.mark.asyncio
     async def test_include_images_parameter(self, ocr_service, mock_ocr_response):
