@@ -1,102 +1,55 @@
-version: '3.9'
+version: '3.8'
 
 services:
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: pdf_extractor_db
-    restart: unless-stopped
+    container_name: question_bank_postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_USER: ${POSTGRES_USER:-questionuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-securepassword123}
       POSTGRES_DB: ${POSTGRES_DB:-question_bank}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./pdf_question_extractor/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./pdf_question_extractor/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-questionuser}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - pdf_extractor_net
+      - question_network
 
   app:
     build:
       context: ./pdf_question_extractor
       dockerfile: Dockerfile
-    container_name: pdf_extractor_app
-    restart: unless-stopped
-    # Note: The app runs in its own container with isolated Python environment
-    # The super_c venv is only used for running docker-compose commands
+    container_name: question_extractor_app
     environment:
-      # Database
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-question_bank}
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_DB: ${POSTGRES_DB:-question_bank}
-      
-      # API Keys
-      MISTRAL_API_KEY: ${MISTRAL_API_KEY}
-      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
-      
-      # App Settings
-      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
-      ENVIRONMENT: ${ENVIRONMENT:-development}
-      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      - POSTGRES_USER=${POSTGRES_USER:-questionuser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-securepassword123}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-question_bank}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
     volumes:
-      # Mount source code for hot reload in development
-      - ./pdf_question_extractor:/app:delegated
-      # Persistent volumes
+      - ./pdf_question_extractor:/app
       - ./uploads:/app/uploads
       - ./logs:/app/logs
-      # Exclude Python cache and virtual environments
-      - /app/__pycache__
-      - /app/.pytest_cache
-      - /app/.mypy_cache
     ports:
-      - "${APP_PORT:-8000}:8000"
+      - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
+    command: uvicorn app:app --host 0.0.0.0 --port 8000 --reload
     networks:
-      - pdf_extractor_net
-    # Resource limits
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 2G
-        reservations:
-          cpus: '1'
-          memory: 1G
-
-  # Optional: Redis for caching and task queue (future enhancement)
-  # redis:
-  #   image: redis:7-alpine
-  #   container_name: pdf_extractor_redis
-  #   restart: unless-stopped
-  #   ports:
-  #     - "${REDIS_PORT:-6379}:6379"
-  #   volumes:
-  #     - redis_data:/data
-  #   networks:
-  #     - pdf_extractor_net
-  #   healthcheck:
-  #     test: ["CMD", "redis-cli", "ping"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-
-networks:
-  pdf_extractor_net:
-    driver: bridge
+      - question_network
 
 volumes:
   postgres_data:
-    driver: local
-  # redis_data:
-  #   driver: local
+
+networks:
+  question_network:
+    driver: bridge
