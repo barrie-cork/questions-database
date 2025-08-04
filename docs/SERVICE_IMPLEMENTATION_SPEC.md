@@ -11,17 +11,23 @@ Detailed specifications for implementing the core services using the latest APIs
 from mistralai import Mistral
 import base64
 import logging
+import os
 from typing import Optional
 from tenacity import retry, stop_after_attempt, wait_exponential
 import aiofiles
 
 class MistralOCRService:
-    """Service for processing PDFs with Mistral OCR API"""
+    """Service for processing PDFs with Mistral OCR API
+    
+    Uses mistral-ocr-latest model which provides unprecedented accuracy
+    in document understanding, comprehending text, tables, equations, and media.
+    """
     
     def __init__(self, api_key: str):
         self.client = Mistral(api_key=api_key)
         self.logger = logging.getLogger(__name__)
         self.max_file_size = 50 * 1024 * 1024  # 50MB limit
+        self.max_pages = 1000  # Maximum pages limit
         
     @retry(
         stop=stop_after_attempt(3),
@@ -48,15 +54,19 @@ class MistralOCRService:
             pdf_base64 = base64.b64encode(pdf_content).decode('utf-8')
         
         try:
-            # Process with Mistral OCR
-            response = await self.client.ocr.process_async(
-                model="mistral-ocr-latest",
+            # Process with Mistral OCR - Latest model as of 2025
+            # Model options: mistral-ocr-latest, mistral-ocr-2505
+            response = await self.client.ocr.process(
+                model="mistral-ocr-latest",  # Best for document understanding
                 document={
                     "type": "document_base64",
                     "document_base64": pdf_base64
                 },
                 include_image_base64=True  # Include extracted images
             )
+            
+            # Note: OCR preserves document structure and footnotes but not formatting
+            # (bold, italics, etc). Outputs interleaved text and images.
             
             self.logger.info(f"Successfully processed {pdf_path}")
             return response.text
@@ -81,6 +91,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 import asyncio
 from collections import deque
 import time
+import logging
 
 # Pydantic models for structured output
 class QuestionType(str, Enum):
@@ -130,13 +141,19 @@ class RateLimiter:
 
 # Main LLM service
 class GeminiLLMService:
-    """Service for extracting questions using Gemini 2.5 Flash Lite"""
+    """Service for extracting questions using Gemini 2.5 Flash
+    
+    Utilizes Gemini 2.5 Flash's thinking capabilities and structured output
+    for accurate question extraction with JSON schema validation.
+    """
     
     def __init__(self, api_key: str):
         self.client = genai.Client(api_key=api_key)
-        self.model = "gemini-2.5-flash-lite-001"
+        # Gemini 2.5 Flash - best price/performance for structured extraction
+        self.model = "gemini-2.5-flash"  
         self.rate_limiter = RateLimiter(max_requests_per_minute=60)
         self.chunk_threshold = 50000  # Characters for single processing
+        self.logger = logging.getLogger(__name__)
         
     async def extract_questions(self, markdown_text: str, pdf_filename: str) -> ExamPaper:
         """Extract questions from OCR markdown"""
@@ -155,6 +172,7 @@ class GeminiLLMService:
         prompt = self._create_extraction_prompt(text, filename)
         
         try:
+            # Generate content with structured output using Gemini 2.5 Flash
             response = await self.client.models.generate_content_async(
                 model=self.model,
                 contents=prompt,
@@ -163,7 +181,8 @@ class GeminiLLMService:
                     response_schema=ExamPaper.model_json_schema(),
                     temperature=0.1,  # Low for consistency
                     max_output_tokens=8192,
-                    top_p=0.95
+                    top_p=0.95,
+                    # Optional: Add stop_sequences, presence_penalty, frequency_penalty
                 ),
                 safety_settings=self._get_safety_settings()
             )
@@ -293,10 +312,12 @@ class GeminiEmbeddingService:
     
     def __init__(self, api_key: str):
         self.client = genai.Client(api_key=api_key)
-        self.model = "models/embedding-001"  # Note: use "models/" prefix
-        self.dimension = 768
+        # Latest embedding model with 3072 dimensions and 8K token limit
+        self.model = "models/gemini-embedding-001"  
+        self.dimension = 3072  # Full dimensions (can be reduced with output_dimensionality)
         self.rate_limiter = RateLimiter(max_requests_per_minute=100)
         self.batch_size = 5  # Process 5 texts at a time
+        self.logger = logging.getLogger(__name__)
         
     async def generate_embedding(
         self, 
@@ -307,9 +328,11 @@ class GeminiEmbeddingService:
         
         await self.rate_limiter.acquire()
         
+        # Configure embedding generation with task type
         config = types.EmbedContentConfig(
-            task_type=task_type,
-            output_dimensionality=self.dimension
+            task_type=task_type,  # Options: RETRIEVAL_DOCUMENT, RETRIEVAL_QUERY, etc.
+            output_dimensionality=self.dimension,  # Can reduce from 3072 for storage efficiency
+            # Optional: title parameter for document context
         )
         
         try:
@@ -696,3 +719,24 @@ class PerformanceMonitor:
 7. **Error Handling**: Comprehensive error handling and logging throughout
 8. **Performance Metrics**: Prometheus metrics for monitoring in production
 9. **Smart Chunking**: Large documents are intelligently split with context preservation
+
+## API Updates (2025)
+
+### Mistral OCR
+- **Model**: `mistral-ocr-latest` (or `mistral-ocr-2505` for specific version)
+- **Capabilities**: Comprehends text, tables, equations, media with unprecedented accuracy
+- **Limits**: 50MB file size, 1000 pages maximum
+- **Output**: Interleaved text and images in Markdown format
+- **Pricing**: 1000 pages/$1 (double with batch inference)
+
+### Gemini 2.5 Flash
+- **Model**: `gemini-2.5-flash` (stable version as of 2025)
+- **Features**: Native structured JSON output with schema validation
+- **Performance**: 22% efficiency gains, best price/performance ratio
+- **Context**: 1M token context window for processing entire documents
+
+### Gemini Embeddings
+- **Model**: `gemini-embedding-001` (3072 dimensions, 8K token limit)
+- **Task Types**: RETRIEVAL_DOCUMENT, RETRIEVAL_QUERY, SEMANTIC_SIMILARITY, etc.
+- **Features**: Matryoshka Representation Learning for dimension reduction
+- **Performance**: MTEB score of 68.32, leading multilingual performance

@@ -53,11 +53,12 @@ A local application for extracting questions from scanned and digital PDF test f
 
 #### 4.3 Question Extraction & Embedding
 
-* Use **Gemini 2.5 Flash Lite** for intelligent question parsing:
+* Use **Gemini 2.5 Flash** for intelligent question parsing:
   * 1M token context window (handles entire exam papers)
-  * Native JSON schema support for structured output
-  * Cost-effective: $0.10/1M input tokens, $0.40/1M output tokens
+  * Native JSON schema support for structured output using google-genai SDK
+  * Cost-effective with 22% efficiency gains vs previous models
   * Lower latency than other models
+  * Best price/performance ratio for extraction tasks
 * Smart chunking strategy using LangChain:
   * Process whole documents <50k characters in one pass
   * Recursive text splitting for larger documents
@@ -72,9 +73,10 @@ A local application for extracting questions from scanned and digital PDF test f
   * Full question text
   * Source PDF filename
 * Generate **Gemini embeddings** for each question:
-  * Use `gemini-embedding-001` model
-  * 768-dimensional vectors for semantic search
-  * Supports up to 2,048 tokens per embedding
+  * Use `gemini-embedding-001` model (3072 dimensions, configurable)
+  * Support for dimension reduction (768/1536/3072) with Matryoshka learning
+  * Supports up to 8K tokens per embedding
+  * Enhanced embeddings with cognitive skill inference
   * Store embeddings separately for versioning
 
 #### 4.4 Review Interface (Web UI)
@@ -175,10 +177,11 @@ A local application for extracting questions from scanned and digital PDF test f
   * Pricing: $1 per 1,000 pages ($0.001/page)
   * Available via la Plateforme API
   * Optional self-hosting for data privacy
-* **LLM Parsing**: Gemini 2.5 Flash Lite
-  * Pricing: $0.10/1M input tokens, $0.40/1M output tokens
-  * Native structured output with JSON schema
-  * 1M token context window
+* **LLM Parsing**: Gemini 2.5 Flash
+  * Best price/performance ratio with 22% efficiency gains
+  * Native structured output with JSON schema using google-genai SDK
+  * 1M token context window with thinking mode
+  * Model: `gemini-2.5-flash` (stable as of 2025)
 * **Backend**: FastAPI 0.115+
   * Modern async REST API
   * Automatic OpenAPI documentation
@@ -190,15 +193,17 @@ A local application for extracting questions from scanned and digital PDF test f
   * CDN-hosted dependencies
 * **Python Libraries**:
   * `mistralai==1.2.3` - Mistral OCR client
-  * `google-genai==0.9.0` - New Gemini API SDK (replaces google-generativeai)
+  * `google-genai==0.9.0` - New Gemini API SDK (replaces deprecated google-generativeai)
   * `langchain-text-splitters==0.3.4` - Smart text chunking
   * `pydantic==2.10.4` - Schema validation
   * `fastapi==0.115.0` - Modern async web framework
   * `uvicorn[standard]==0.34.0` - ASGI server
   * `sqlalchemy[asyncio]==2.0.35` - Database ORM with async support
   * `asyncpg==0.30.0` - Async PostgreSQL driver
-  * `tenacity==9.0.0` - Retry logic
+  * `tenacity==9.0.0` - Retry logic with exponential backoff
   * `httpx==0.28.0` - Async HTTP client
+  * `pgvector==0.3.6` - PostgreSQL vector extension client
+  * `aiofiles==24.1.0` - Async file operations
 * **Database**: PostgreSQL 16+ with pgvector 0.8.0+
 * **Containerization**: Docker & Docker Compose
   * PostgreSQL with pgvector in container
@@ -310,7 +315,7 @@ ocr_response = client.ocr.process(
 
 ---
 
-### 12. **Gemini 2.5 Flash Lite Implementation Details**
+### 12. **Gemini 2.5 Flash Implementation Details**
 
 #### Structured Output Schema
 ```python
@@ -345,7 +350,7 @@ class ExamPaper(BaseModel):
 ```python
 async def extract_questions(markdown_text: str, pdf_filename: str):
     client = genai.Client(api_key=os.getenv('GOOGLE_API_KEY'))
-    model = "gemini-2.5-flash-lite-001"
+    model = "gemini-2.5-flash"  # Stable version for structured extraction
     
     response = await client.models.generate_content_async(
         model=model,
@@ -387,7 +392,7 @@ class GeminiEmbeddingService:
     def __init__(self, api_key: str):
         self.client = genai.Client(api_key=api_key)
         self.model = "models/embedding-001"  # Note: models/ prefix required
-        self.dimension = 768
+        self.dimension = 3072  # Full dimensions (can reduce with output_dimensionality)
         
     async def generate_embedding(self, text: str, task_type: str = "RETRIEVAL_DOCUMENT") -> List[float]:
         """Generate embedding for a single text"""
