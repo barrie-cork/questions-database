@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Question Extractor</title>
+    
+    <!-- External Libraries -->
+    <link href="https://cdn.jsdelivr.net/npm/tabulator-tables@5.4.4/dist/css/tabulator.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Custom Styles -->
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1><i class="fas fa-file-pdf"></i> PDF Question Extractor</h1>
+            <div class="stats-summary" id="statsDisplay">
+                <span class="stat-item">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span id="totalExtracted">0</span> Extracted
+                </span>
+                <span class="stat-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span id="totalApproved">0</span> Approved
+                </span>
+                <span class="stat-item">
+                    <i class="fas fa-database"></i>
+                    <span id="totalPermanent">0</span> Permanent
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            
+            <!-- Upload Section -->
+            <section class="upload-section card">
+                <h2><i class="fas fa-cloud-upload-alt"></i> Upload PDF Files</h2>
+                
+                <!-- File Drop Zone -->
+                <div class="file-drop-zone" id="dropZone">
+                    <div class="drop-zone-content">
+                        <i class="fas fa-cloud-upload-alt fa-3x"></i>
+                        <p>Drag and drop PDF files here, or click to select</p>
+                        <button type="button" class="btn btn-primary" id="selectFilesBtn">
+                            <i class="fas fa-folder-open"></i> Select Files
+                        </button>
+                        <input type="file" id="fileInput" multiple accept=".pdf" hidden>
+                    </div>
+                </div>
+                
+                <!-- Upload Options -->
+                <div class="upload-options">
+                    <div class="option-group">
+                        <label>
+                            <input type="checkbox" id="storeToDb" checked>
+                            <span class="checkmark"></span>
+                            Store to database
+                        </label>
+                    </div>
+                    <div class="option-group">
+                        <label>
+                            <input type="checkbox" id="generateEmbeddings" checked>
+                            <span class="checkmark"></span>
+                            Generate embeddings
+                        </label>
+                    </div>
+                    <div class="option-group">
+                        <label for="maxConcurrent">Max concurrent processing:</label>
+                        <select id="maxConcurrent">
+                            <option value="1">1</option>
+                            <option value="2" selected>2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Upload Progress -->
+                <div class="upload-progress" id="uploadProgress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-info">
+                        <span id="progressText">Preparing...</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Control Panel -->
+            <section class="control-panel card">
+                <div class="controls-left">
+                    <div class="filter-group">
+                        <select id="statusFilter" class="filter-select">
+                            <option value="">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                        
+                        <select id="yearFilter" class="filter-select">
+                            <option value="">All Years</option>
+                        </select>
+                        
+                        <select id="levelFilter" class="filter-select">
+                            <option value="">All Levels</option>
+                        </select>
+                        
+                        <input type="text" id="searchInput" placeholder="Search questions..." class="search-input">
+                    </div>
+                </div>
+                
+                <div class="controls-right">
+                    <div class="bulk-actions">
+                        <button class="btn btn-success" id="bulkApproveBtn" disabled>
+                            <i class="fas fa-check"></i> Approve Selected
+                        </button>
+                        <button class="btn btn-danger" id="bulkRejectBtn" disabled>
+                            <i class="fas fa-times"></i> Reject Selected
+                        </button>
+                        <button class="btn btn-warning" id="bulkDeleteBtn" disabled>
+                            <i class="fas fa-trash"></i> Delete Selected
+                        </button>
+                    </div>
+                    
+                    <div class="save-export">
+                        <button class="btn btn-primary" id="saveApprovedBtn">
+                            <i class="fas fa-save"></i> Save Approved
+                        </button>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary dropdown-toggle" id="exportBtn">
+                                <i class="fas fa-download"></i> Export
+                            </button>
+                            <div class="dropdown-menu" id="exportMenu">
+                                <a href="#" class="dropdown-item" data-format="csv">Export as CSV</a>
+                                <a href="#" class="dropdown-item" data-format="json">Export as JSON</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Questions Table -->
+            <section class="table-section card">
+                <h2><i class="fas fa-table"></i> Questions Review</h2>
+                <div id="questionsTable"></div>
+                
+                <!-- Pagination -->
+                <div class="pagination-container">
+                    <div class="pagination-info">
+                        <span id="paginationInfo">Showing 0-0 of 0 questions</span>
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="btn btn-sm" id="prevPageBtn" disabled>
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <span class="page-info" id="pageInfo">Page 1 of 1</span>
+                        <button class="btn btn-sm" id="nextPageBtn" disabled>
+                            <i class="fas fa-chevron-right"></i> Next
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin fa-3x"></i>
+            <p>Processing...</p>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal" id="confirmModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="confirmTitle">Confirm Action</h3>
+                <button class="modal-close" id="confirmClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">Are you sure you want to perform this action?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="confirmCancel">Cancel</button>
+                <button class="btn btn-primary" id="confirmOk">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- External Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/tabulator-tables@5.4.4/dist/js/tabulator.min.js"></script>
+    
+    <!-- Custom Scripts -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

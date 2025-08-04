@@ -22,7 +22,7 @@ class ExtractedQuestion(Base):
     status = Column(String, default='pending')  # pending/approved/rejected
     modified = Column(Boolean, default=False)
     extraction_date = Column(DateTime(timezone=True), server_default=func.now())
-    metadata = Column(JSONB)
+    extra_metadata = Column('metadata', JSONB)
 
 class Question(Base):
     """Permanent storage for approved questions"""
@@ -39,7 +39,7 @@ class Question(Base):
     source_pdf = Column(String, nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    metadata = Column(JSONB)
+    extra_metadata = Column('metadata', JSONB)
 
 class QuestionEmbedding(Base):
     """Vector embeddings for semantic search"""
