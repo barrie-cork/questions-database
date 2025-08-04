@@ -13,6 +13,11 @@ class HealthResponse(BaseModel):
     version: str = Field(..., description="API version")
     database_connected: bool = Field(..., description="Database connection status")
     services: Dict[str, str] = Field(..., description="Individual service statuses")
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
 
 
 class ProcessingProgressResponse(BaseModel):
@@ -28,6 +33,11 @@ class ProcessingProgressResponse(BaseModel):
     error_message: Optional[str] = Field(None, description="Error message if failed")
     questions_extracted: int = Field(default=0, description="Number of questions extracted")
     questions_stored: int = Field(default=0, description="Number of questions stored")
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
     embeddings_generated: int = Field(default=0, description="Number of embeddings generated")
     is_complete: bool = Field(..., description="Whether processing is complete")
     metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
@@ -50,6 +60,11 @@ class QuestionResponse(BaseModel):
     created_at: Optional[datetime] = Field(None, description="Date created")
     updated_at: Optional[datetime] = Field(None, description="Date last updated")
     extra_metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat() if v else None
+        }
 
 
 class QuestionsListResponse(BaseModel):
@@ -143,6 +158,11 @@ class ErrorResponse(BaseModel):
     detail: Optional[str] = Field(None, description="Detailed error information")
     error_code: Optional[str] = Field(None, description="Error code")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Error timestamp")
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
 
 
 class ValidationErrorResponse(BaseModel):
@@ -151,6 +171,11 @@ class ValidationErrorResponse(BaseModel):
     message: str = Field(default="Validation error", description="Error message")
     errors: List[Dict[str, Any]] = Field(..., description="Detailed validation errors")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Error timestamp")
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
 
 
 class StatusResponse(BaseModel):
@@ -166,6 +191,11 @@ class WebSocketResponse(BaseModel):
     data: Optional[Dict[str, Any]] = Field(None, description="Message data")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Message timestamp")
     client_id: Optional[str] = Field(None, description="Client identifier")
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
 
 
 class StatsResponse(BaseModel):

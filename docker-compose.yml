@@ -4,10 +4,8 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     container_name: question_bank_postgres
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-questionuser}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-securepassword123}
-      POSTGRES_DB: ${POSTGRES_DB:-question_bank}
+    env_file:
+      - ./pdf_question_extractor/.env
     ports:
       - "5432:5432"
     volumes:
@@ -26,14 +24,11 @@ services:
       context: ./pdf_question_extractor
       dockerfile: Dockerfile
     container_name: question_extractor_app
+    env_file:
+      - ./pdf_question_extractor/.env
     environment:
-      - POSTGRES_USER=${POSTGRES_USER:-questionuser}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-securepassword123}
+      # Override POSTGRES_HOST to point to the postgres service
       - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-question_bank}
-      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
     volumes:
       - ./pdf_question_extractor:/app
       - ./uploads:/app/uploads

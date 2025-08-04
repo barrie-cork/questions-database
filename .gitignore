@@ -1,9 +1,6 @@
-# Claude/MCP specific files
-.claude/
-.mcp.json
-super_claude/
-README_MCP_SETUP.md
-readme.md
+# Environment variables
+.env
+.env.local
 
 # Python
 __pycache__/
@@ -14,21 +11,32 @@ __pycache__/
 env/
 venv/
 ENV/
-.venv
+super_c/
+*.egg-info/
+.pytest_cache/
 
-# IDEs
+# Database
+*.db
+*.sqlite3
+postgres_data/
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# OS
-.DS_Store
-Thumbs.db
-
 # Project specific
 uploads/
 logs/
 cache/
-*.log
-.env
+test_files/
+*.pdf
+!test_files/sample.pdf
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml

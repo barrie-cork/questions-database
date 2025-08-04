@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from sqlalchemy import text
 
 # Internal imports
 from config import Config
@@ -202,7 +203,7 @@ async def health_check():
         database_connected = True
         try:
             async with engine.begin() as conn:
-                await conn.execute("SELECT 1")
+                await conn.execute(text("SELECT 1"))
         except Exception as e:
             logger.error(f"Database health check failed: {e}")
             database_connected = False

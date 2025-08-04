@@ -72,5 +72,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+-- Drop trigger if exists and recreate
+DROP TRIGGER IF EXISTS update_questions_updated_at ON questions;
 CREATE TRIGGER update_questions_updated_at BEFORE UPDATE
     ON questions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
