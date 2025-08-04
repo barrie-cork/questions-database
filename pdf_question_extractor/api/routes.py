@@ -10,7 +10,7 @@ from typing import List, Optional, Dict, Any, Union
 from io import StringIO, BytesIO
 
 from fastapi import (
-    APIRouter, Depends, HTTPException, UploadFile, File, Query, Body,
+    APIRouter, Depends, HTTPException, UploadFile, File, Query, Body, Form,
     BackgroundTasks, WebSocket, WebSocketDisconnect, status
 )
 from fastapi.responses import StreamingResponse, FileResponse
@@ -136,7 +136,9 @@ async def export_to_csv(questions: List[QuestionResponse], include_metadata: boo
 async def upload_files(
     background_tasks: BackgroundTasks,
     files: List[UploadFile] = File(...),
-    request_data: UploadRequest = Body(default=UploadRequest()),
+    store_to_db: bool = Form(default=True),
+    generate_embeddings: bool = Form(default=True),
+    max_concurrent: int = Form(default=2),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -186,8 +188,8 @@ async def upload_files(
             background_tasks.add_task(
                 processor.process_single_pdf,
                 uploaded_files[0],
-                request_data.store_to_db,
-                request_data.generate_embeddings
+                store_to_db,
+                generate_embeddings
             )
         else:
             # For multiple files, process as batch
@@ -195,9 +197,9 @@ async def upload_files(
                 processor.process_pdf_folder,
                 upload_dir,
                 False,  # not recursive since files are in upload dir
-                request_data.max_concurrent,
-                request_data.store_to_db,
-                request_data.generate_embeddings
+                max_concurrent,
+                store_to_db,
+                generate_embeddings
             )
         
         return UploadResponse(

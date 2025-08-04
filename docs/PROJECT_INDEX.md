@@ -38,7 +38,8 @@
 ### 🚀 Getting Started
 - [README](../README.md) - Project overview and quick start
 - [Docker Quickstart](../DOCKER_QUICKSTART.md) - Docker setup guide
-- [API Setup](../pdf_question_extractor/API_SETUP.md) - API configuration guide
+- [API Reference](API_REFERENCE.md) - Complete API documentation
+- [Developer Quickstart](DEVELOPER_QUICKSTART.md) - Development environment setup
 
 ---
 
@@ -51,8 +52,8 @@
 4. Check [Junior Developer Task List](JUNIOR_DEVELOPER_TASK_LIST.md)
 
 ### For API Integration
-1. Read [API Design](API_DESIGN.md)
-2. Review [API Setup](../pdf_question_extractor/API_SETUP.md)
+1. Read [API Reference](API_REFERENCE.md) - Complete API documentation
+2. Review [API Design](API_DESIGN.md) - Design principles
 3. Test with the interactive docs at `/api/docs`
 
 ### For Service Development

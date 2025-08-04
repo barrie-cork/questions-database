@@ -33,14 +33,14 @@ class ProcessingProgressResponse(BaseModel):
     error_message: Optional[str] = Field(None, description="Error message if failed")
     questions_extracted: int = Field(default=0, description="Number of questions extracted")
     questions_stored: int = Field(default=0, description="Number of questions stored")
+    embeddings_generated: int = Field(default=0, description="Number of embeddings generated")
+    is_complete: bool = Field(..., description="Whether processing is complete")
+    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
     
     class Config:
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
-    embeddings_generated: int = Field(default=0, description="Number of embeddings generated")
-    is_complete: bool = Field(..., description="Whether processing is complete")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
 
 
 class QuestionResponse(BaseModel):

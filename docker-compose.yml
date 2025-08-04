@@ -12,7 +12,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./pdf_question_extractor/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-questionuser}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-questionuser} -d ${POSTGRES_DB:-question_bank}"]
       interval: 10s
       timeout: 5s
       retries: 5

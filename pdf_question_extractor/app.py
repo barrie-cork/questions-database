@@ -1,9 +1,7 @@
-import os
 import logging
 import traceback
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request, status
@@ -84,7 +82,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content=ValidationErrorResponse(
             message="Request validation failed",
             errors=error_details
-        ).dict()
+        ).model_dump(mode='json')
     )
 
 
@@ -98,7 +96,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
         content=ErrorResponse(
             message=exc.detail or "An error occurred",
             error_code=f"HTTP_{exc.status_code}"
-        ).dict()
+        ).model_dump(mode='json')
     )
 
 
@@ -122,7 +120,7 @@ async def general_exception_handler(request: Request, exc: Exception):
             message=message,
             detail=detail,
             error_code="INTERNAL_SERVER_ERROR"
-        ).dict()
+        ).model_dump(mode='json')
     )
 
 

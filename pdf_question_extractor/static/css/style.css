@@ -214,6 +214,28 @@ body {
     background: linear-gradient(90deg, var(--primary-color), #0056b3);
     width: 0%;
     transition: width 0.3s ease;
+    position: relative;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+    );
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
 }
 
 .progress-info {
@@ -221,6 +243,38 @@ body {
     justify-content: space-between;
     font-size: 0.9rem;
     color: var(--gray-600);
+}
+
+.progress-stages {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.progress-stage {
+    flex: 1;
+    text-align: center;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    background: var(--gray-100);
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+}
+
+.progress-stage.active {
+    background: var(--primary-color);
+    color: var(--white);
+}
+
+.progress-stage.completed {
+    background: var(--success-color);
+    color: var(--white);
+}
+
+.progress-stage i {
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+    display: block;
 }
 
 /* Control Panel */

@@ -7,7 +7,7 @@ An intelligent system that extracts exam questions from PDF files using AI-power
 - **AI-Powered OCR**: Extracts text from PDF files using Mistral's Pixtral OCR model
 - **Intelligent Question Extraction**: Uses Google Gemini to identify and structure exam questions
 - **Semantic Search**: Vector embeddings enable finding similar questions
-- **Real-time Progress Tracking**: WebSocket support for live processing updates
+- **Progress Tracking**: Monitor PDF processing status via API
 - **Web Interface**: Modern, responsive UI for reviewing and editing extracted questions
 - **Batch Processing**: Process multiple PDFs concurrently with configurable limits
 - **Export Functionality**: Export approved questions in CSV or JSON format
@@ -17,7 +17,7 @@ An intelligent system that extracts exam questions from PDF files using AI-power
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Web UI (FastAPI + Vanilla JS)                │
-│                         WebSocket Support                        │
+│                         Progress Tracking                        │
 ├─────────────────────────────────────────────────────────────────┤
 │                        PDF Processor                             │
 │              (Orchestration & Progress Tracking)                 │
@@ -110,20 +110,11 @@ An intelligent system that extracts exam questions from PDF files using AI-power
 - `PUT /api/questions/{id}` - Update question details
 - `POST /api/questions/bulk` - Bulk operations (approve/reject/delete)
 - `GET /api/export` - Export questions in various formats
-- `WS /ws/processing` - WebSocket for real-time progress
+- `GET /api/stats` - Get question statistics
 
 ### Command Line
 
-```python
-from services.pdf_processor import process_pdf_file
-
-# Process single PDF
-result = await process_pdf_file("exam.pdf")
-
-# Process directory
-from services.pdf_processor import process_pdf_directory
-results = await process_pdf_directory("exams/", recursive=True)
-```
+For advanced usage and API integration, see the [API Reference](docs/API_REFERENCE.md).
 
 ## Configuration
 
@@ -220,7 +211,7 @@ make db-shell
 
 ### Web Interface
 - Drag-and-drop file upload
-- Real-time progress via WebSocket
+- Real-time progress tracking
 - Auto-save with debouncing
 - Bulk operations support
 - Responsive design
@@ -235,7 +226,7 @@ Full API documentation is available at http://localhost:8000/api/docs when runni
 curl -X POST "http://localhost:8000/api/upload" \
   -H "accept: application/json" \
   -H "Content-Type: multipart/form-data" \
-  -F "file=@exam.pdf"
+  -F "pdfs=@exam.pdf"
 ```
 
 ### Example: Search Questions
@@ -317,7 +308,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Documentation
 
+- [Project Documentation Index](docs/PROJECT_INDEX.md) - Complete documentation navigation
 - [Services Documentation](docs/SERVICES_DOCUMENTATION.md) - Detailed service layer documentation
-- [API Reference](http://localhost:8000/api/docs) - Interactive API documentation
-- [Development Guide](docs/DEVELOPMENT.md) - Development setup and guidelines
+- [API Reference](docs/API_REFERENCE.md) - Complete API documentation
+- [Developer Quick Start](docs/DEVELOPER_QUICKSTART.md) - Fast setup guide
 - [Docker Guide](DOCKER_QUICKSTART.md) - Docker setup and commands
+- [Interactive API Docs](http://localhost:8000/api/docs) - Live API documentation (when running)

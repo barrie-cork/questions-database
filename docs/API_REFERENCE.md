@@ -1122,6 +1122,54 @@ async def process_with_monitoring(client, file_path):
 5. Click "Execute"
 6. View the response
 
+### WebSocket Testing
+```bash
+# Install wscat
+npm install -g wscat
+
+# Connect to WebSocket
+wscat -c ws://localhost:8000/api/ws/processing
+
+# Send ping
+{"type": "ping"}
+```
+
+### Testing Individual Endpoints
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Get questions
+curl "http://localhost:8000/api/questions?page=1&per_page=5"
+
+# Upload PDF
+curl -X POST "http://localhost:8000/api/upload" \
+  -F "files=@test.pdf" \
+  -F "request_data={\"store_to_db\": true}"
+```
+
+### Database Queries for Testing
+```sql
+-- Check extracted questions
+SELECT COUNT(*) FROM extracted_questions;
+
+-- Check permanent questions  
+SELECT COUNT(*) FROM questions;
+
+-- Check question status distribution
+SELECT status, COUNT(*) FROM extracted_questions GROUP BY status;
+
+-- Check question embeddings
+SELECT COUNT(*) FROM question_embeddings;
+
+-- Find similar questions
+SELECT q.*, e.similarity 
+FROM questions q
+JOIN question_embeddings e ON q.id = e.question_id
+ORDER BY e.embedding <-> (SELECT embedding FROM question_embeddings WHERE question_id = 1)
+LIMIT 5;
+```
+
 ### Postman Collection
 Import this collection for easy testing:
 ```json

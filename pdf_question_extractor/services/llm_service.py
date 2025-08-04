@@ -112,7 +112,7 @@ Document text:
             
             logger.info(f"Extracting questions from {pdf_filename} ({len(ocr_text)} chars)")
             
-            response = await self.client.models.generate_content_async(
+            response = await self.client.models.generate_content(
                 model=self.model,
                 contents=prompt,
                 config=types.GenerateContentConfig(

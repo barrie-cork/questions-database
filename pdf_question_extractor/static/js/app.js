@@ -555,7 +555,14 @@ class PDFQuestionExtractorApp {
                 console.log('WebSocket connection established');
                 break;
                 
+            case 'processing_started':
+                console.log('Processing started:', message.data);
+                this.showToast('Processing Started', 'Your PDF is being processed...', 'info');
+                this.updateProcessingProgress({ progress_percentage: 0, current_step: 'Starting...' });
+                break;
+                
             case 'processing_progress':
+            case 'progress':
                 this.updateProcessingProgress(message.data);
                 break;
                 
@@ -564,6 +571,7 @@ class PDFQuestionExtractorApp {
                 break;
                 
             case 'processing_error':
+            case 'error':
                 this.handleProcessingError(message.data);
                 break;
                 
@@ -584,12 +592,57 @@ class PDFQuestionExtractorApp {
         const progressFill = document.getElementById('progressFill');
         const progressText = document.getElementById('progressText');
         const progressPercent = document.getElementById('progressPercent');
+        const progressStages = document.getElementById('progressStages');
         
         if (progressBar && progressFill && progressText && progressPercent) {
             progressBar.style.display = 'block';
             progressFill.style.width = `${data.progress_percentage || 0}%`;
             progressText.textContent = data.current_step || 'Processing...';
             progressPercent.textContent = `${Math.round(data.progress_percentage || 0)}%`;
+            
+            // Show progress stages
+            if (progressStages) {
+                progressStages.style.display = 'flex';
+                
+                // Update stage indicators based on current step
+                const stages = {
+                    'upload': ['Uploading', 'Upload'],
+                    'ocr': ['OCR Processing', 'OCR', 'Reading'],
+                    'extract': ['Extracting', 'Extract', 'Questions'],
+                    'store': ['Storing', 'Store', 'Database', 'Saving']
+                };
+                
+                // Reset all stages
+                document.querySelectorAll('.progress-stage').forEach(stage => {
+                    stage.classList.remove('active', 'completed');
+                });
+                
+                // Find current stage
+                const currentStep = (data.current_step || '').toLowerCase();
+                let stageFound = false;
+                let completedStages = [];
+                
+                for (const [stageId, keywords] of Object.entries(stages)) {
+                    const stageElement = document.getElementById(`stage-${stageId}`);
+                    if (stageElement) {
+                        if (keywords.some(keyword => currentStep.includes(keyword.toLowerCase()))) {
+                            stageElement.classList.add('active');
+                            stageFound = true;
+                        } else if (!stageFound) {
+                            stageElement.classList.add('completed');
+                            completedStages.push(stageId);
+                        }
+                    }
+                }
+                
+                // Update progress based on stages
+                if (!data.progress_percentage && completedStages.length > 0) {
+                    const totalStages = 4;
+                    const percentage = (completedStages.length / totalStages) * 100;
+                    progressFill.style.width = `${percentage}%`;
+                    progressPercent.textContent = `${Math.round(percentage)}%`;
+                }
+            }
         }
     }
     
@@ -597,9 +650,26 @@ class PDFQuestionExtractorApp {
      * Handle processing completion
      */
     async handleProcessingComplete(data) {
+        // Hide progress indicators after a delay
         const progressBar = document.getElementById('uploadProgress');
+        const progressStages = document.getElementById('progressStages');
+        
+        // Mark all stages as completed
+        if (progressStages) {
+            document.querySelectorAll('.progress-stage').forEach(stage => {
+                stage.classList.remove('active');
+                stage.classList.add('completed');
+            });
+        }
+        
+        // Hide after showing completion state
         if (progressBar) {
-            progressBar.style.display = 'none';
+            setTimeout(() => {
+                progressBar.style.display = 'none';
+                if (progressStages) {
+                    progressStages.style.display = 'none';
+                }
+            }, 2000);
         }
         
         this.showToast('Success', `Processing complete! ${data.questions_extracted || 0} questions extracted.`, 'success');
@@ -614,8 +684,13 @@ class PDFQuestionExtractorApp {
      */
     handleProcessingError(data) {
         const progressBar = document.getElementById('uploadProgress');
+        const progressStages = document.getElementById('progressStages');
+        
         if (progressBar) {
             progressBar.style.display = 'none';
+        }
+        if (progressStages) {
+            progressStages.style.display = 'none';
         }
         
         this.showToast('Error', data.error || 'Processing failed', 'error');
@@ -651,13 +726,10 @@ class PDFQuestionExtractorApp {
             const generateEmbeddings = document.getElementById('generateEmbeddings').checked;
             const maxConcurrent = document.getElementById('maxConcurrent').value;
             
-            const requestData = {
-                store_to_db: storeToDb,
-                generate_embeddings: generateEmbeddings,
-                max_concurrent: parseInt(maxConcurrent)
-            };
-            
-            formData.append('request_data', JSON.stringify(requestData));
+            // Append form fields
+            formData.append('store_to_db', storeToDb);
+            formData.append('generate_embeddings', generateEmbeddings);
+            formData.append('max_concurrent', parseInt(maxConcurrent));
             
             // Show loading
             this.showLoading(true);
