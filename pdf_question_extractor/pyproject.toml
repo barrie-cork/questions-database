@@ -1,0 +1,76 @@
+[tool.poetry]
+name = "pdf-question-extractor"
+version = "0.1.0"
+description = "Extract questions from PDF exam papers using AI"
+authors = ["Your Name <email@example.com>"]
+readme = "README.md"
+python = "^3.11"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.115.0"
+uvicorn = {extras = ["standard"], version = "^0.34.0"}
+python-multipart = "^0.0.20"
+mistralai = "^1.2.3"
+google-genai = "^1.0.0"
+httpx = "^0.28.0"
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.35"}
+asyncpg = "^0.30.0"
+pgvector = "^0.3.6"
+alembic = "^1.14.0"
+pydantic = "^2.10.4"
+pydantic-settings = "^2.7.0"
+python-dotenv = "^1.0.1"
+tenacity = "^9.0.0"
+pypdf = "^5.2.0"
+pillow = "^11.1.0"
+numpy = "^2.2.1"
+aiofiles = "^24.1.0"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+redis = "^5.2.2"
+structlog = "^25.1.0"
+prometheus-client = "^0.22.0"
+sentry-sdk = {extras = ["fastapi"], version = "^2.21.0"}
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.0"
+pytest-asyncio = "^0.25.0"
+pytest-cov = "^6.0.0"
+black = "^24.11.0"
+ruff = "^0.9.0"
+mypy = "^1.14.0"
+pre-commit = "^4.0.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"
+asyncio_mode = "auto"

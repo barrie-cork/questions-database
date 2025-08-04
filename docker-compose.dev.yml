@@ -1,0 +1,38 @@
+version: '3.9'
+
+# Development overrides for docker-compose.yml
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  app:
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - RELOAD=true
+    volumes:
+      # Mount entire project for development
+      - ./pdf_question_extractor:/app:delegated
+      # Mount static files for hot reload
+      - ./pdf_question_extractor/static:/app/static:delegated
+    command: uvicorn app:app --host 0.0.0.0 --port 8000 --reload --log-level debug
+
+  # pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pdf_extractor_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - pdf_extractor_net
+    depends_on:
+      - postgres
+
+volumes:
+  pgadmin_data:
+    driver: local

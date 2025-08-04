@@ -1,0 +1,33 @@
+# Claude/MCP specific files
+.claude/
+.mcp.json
+super_claude/
+README_MCP_SETUP.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+uploads/
+logs/
+cache/
+*.log
+.env
